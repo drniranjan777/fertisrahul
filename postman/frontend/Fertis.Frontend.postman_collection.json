@@ -1,0 +1,1006 @@
+{
+  "info": {
+    "name": "Fertis Website API",
+    "description": "Every API the Fertis website needs to show its home banner, products and crops from the admin data. All requests are public `GET` requests: no token, no headers.\n\n## Setup\n- `base_url` = backend URL + `/api/v1`, for example `http://localhost:5200/api/v1`. Import `backend/postman/environments/Local.postman_environment.json`, or edit the collection variable.\n- `asset_url` = backend URL without `/api/v1` (for example `http://localhost:5200`). Image and PDF fields are paths like `/uploads/crops/seed-maize.jpg`; the website must put `asset_url` in front of them.\n- The backend allows browser calls from the origins in `CORS_ORIGIN` in `backend/.env` (`*` = any). On a live server, set it to the website domain, e.g. `https://fertis-web.testlegal.com`.\n\n## Response shape\nSuccess: `{ \"success\": true, \"message\": \"...\", \"data\": ... }`\nError: `{ \"success\": false, \"message\": \"...\", ... }` with status `400` (bad query, see message) or `404` (unknown or inactive slug).\nPaged lists: `data = { rows: [...], totalItems, totalPages, currentPage }`.\n\n## Which page calls what\n| Website page | Requests |\n|---|---|\n| Header / menus | Categories |\n| Home (`/`) | Home banner (with the visitor's state), States (if the site lets visitors pick a state) |\n| Products (`/products`) | Categories (tabs), Brands + Applications + Crops (filter checkboxes), Product list |\n| Product page (`/products/:slug`) | Product detail |\n| Crops (`/crops`) | Crop Types (tabs), Crops (sidebar checkboxes), Crop gallery |\n| Crop schedule page (`/crops/:slug`) | Crop detail |\n\nOnly active rows are returned everywhere. Turning something off in the admin hides it from the website at once.\n\nEach request has saved example responses (taken from the seeded development data), so you can see the fields without sending anything.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5200/api/v1"
+    },
+    {
+      "key": "asset_url",
+      "value": "http://localhost:5200"
+    }
+  ],
+  "item": [
+    {
+      "name": "Home Banner",
+      "item": [
+        {
+          "name": "Home banner",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/frontend/home-banner?state=telangana",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "frontend",
+                "home-banner"
+              ],
+              "query": [
+                {
+                  "key": "state",
+                  "value": "telangana",
+                  "description": "The visitor's state slug (from States). Left out, empty, unknown or without its own video = the default video. The website decides how it learns the state."
+                }
+              ]
+            },
+            "description": "The hero at the top of the home page. Never returns `404`.\n\n- `title`: the headline lines (1 to 3, empty lines left out). Show each on its own line.\n- `highlight`: a phrase inside one of the lines to show in gold (`#E9C03C`), or `null`. Show ordinal suffixes like \"st\" as superscript, as today.\n- `buttons`: 1 or 2 `{ label, link, style }`. `style` is `primary` (solid navy) or `secondary` (white outline). `link` is a site path like `/solutions` or a full URL.\n- `state`: the state slug whose own video was used, or `null` when the default video was used.\n- `video`: `{ poster, duration, sources }`, or `null` only if not even the default video has finished converting (show the poster/gradient only).\n- `sources`: light MP4 versions, lightest first: `low` (360p, about 250 KB for 8 s), `medium` (540p), `high` (720p). A small video may not have all three. Each has `src`, `width`, `height` and `size` in bytes. No sound track.\n\n**Suggested playback (the website team decides):**\n- Render `<video muted playsinline loop autoplay poster=\"...\">` and show the poster first.\n- Pick the source by `navigator.connection.effectiveType` where supported: `slow-2g` or `saveData` = poster only; `2g` = `low`; `3g` = `medium`; otherwise `high`.\n- Where the browser does not report the connection (Safari): `medium` up to 768 px wide, otherwise `high`.\n- `poster` and `src` are `/uploads/...` paths: put `asset_url` in front."
+          },
+          "response": [
+            {
+              "name": "200 State with its own video",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/frontend/home-banner?state=telangana",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "frontend",
+                    "home-banner"
+                  ],
+                  "query": [
+                    {
+                      "key": "state",
+                      "value": "telangana"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Home banner fetched\",\n  \"data\": {\n    \"title\": [\n      \"Innovating Solutions\",\n      \"for the 21st Century\",\n      \"Consumer Needs\"\n    ],\n    \"highlight\": \"21st Century\",\n    \"buttons\": [\n      {\n        \"label\": \"Explore Solutions\",\n        \"link\": \"/solutions\",\n        \"style\": \"primary\"\n      },\n      {\n        \"label\": \"Discover Innovation\",\n        \"link\": \"/innovation\",\n        \"style\": \"secondary\"\n      }\n    ],\n    \"state\": \"telangana\",\n    \"video\": {\n      \"poster\": \"/uploads/banners/2/1791898224626-poster.webp\",\n      \"duration\": 7.9,\n      \"sources\": [\n        {\n          \"src\": \"/uploads/banners/2/1791898224626-low.mp4\",\n          \"size\": 215394,\n          \"width\": 640,\n          \"height\": 360,\n          \"quality\": \"low\"\n        },\n        {\n          \"src\": \"/uploads/banners/2/1791898224626-medium.mp4\",\n          \"size\": 581561,\n          \"width\": 960,\n          \"height\": 540,\n          \"quality\": \"medium\"\n        },\n        {\n          \"src\": \"/uploads/banners/2/1791898224626-high.mp4\",\n          \"size\": 1211552,\n          \"width\": 1280,\n          \"height\": 720,\n          \"quality\": \"high\"\n        }\n      ]\n    }\n  }\n}"
+            },
+            {
+              "name": "200 Default video (state without its own video)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/frontend/home-banner?state=goa",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "frontend",
+                    "home-banner"
+                  ],
+                  "query": [
+                    {
+                      "key": "state",
+                      "value": "goa"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Home banner fetched\",\n  \"data\": {\n    \"title\": [\n      \"Innovating Solutions\",\n      \"for the 21st Century\",\n      \"Consumer Needs\"\n    ],\n    \"highlight\": \"21st Century\",\n    \"buttons\": [\n      {\n        \"label\": \"Explore Solutions\",\n        \"link\": \"/solutions\",\n        \"style\": \"primary\"\n      },\n      {\n        \"label\": \"Discover Innovation\",\n        \"link\": \"/innovation\",\n        \"style\": \"secondary\"\n      }\n    ],\n    \"state\": null,\n    \"video\": {\n      \"poster\": \"/uploads/banners/1/1791897898001-poster.webp\",\n      \"duration\": 7.9,\n      \"sources\": [\n        {\n          \"src\": \"/uploads/banners/1/1791897898001-low.mp4\",\n          \"size\": 215394,\n          \"width\": 640,\n          \"height\": 360,\n          \"quality\": \"low\"\n        },\n        {\n          \"src\": \"/uploads/banners/1/1791897898001-medium.mp4\",\n          \"size\": 573498,\n          \"width\": 960,\n          \"height\": 540,\n          \"quality\": \"medium\"\n        },\n        {\n          \"src\": \"/uploads/banners/1/1791897898001-high.mp4\",\n          \"size\": 1207192,\n          \"width\": 1280,\n          \"height\": 720,\n          \"quality\": \"high\"\n        }\n      ]\n    }\n  }\n}"
+            },
+            {
+              "name": "200 No state sent",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/frontend/home-banner?state=",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "frontend",
+                    "home-banner"
+                  ],
+                  "query": [
+                    {
+                      "key": "state",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Home banner fetched\",\n  \"data\": {\n    \"title\": [\n      \"Innovating Solutions\",\n      \"for the 21st Century\",\n      \"Consumer Needs\"\n    ],\n    \"highlight\": \"21st Century\",\n    \"buttons\": [\n      {\n        \"label\": \"Explore Solutions\",\n        \"link\": \"/solutions\",\n        \"style\": \"primary\"\n      },\n      {\n        \"label\": \"Discover Innovation\",\n        \"link\": \"/innovation\",\n        \"style\": \"secondary\"\n      }\n    ],\n    \"state\": null,\n    \"video\": {\n      \"poster\": \"/uploads/banners/1/1791897898001-poster.webp\",\n      \"duration\": 7.9,\n      \"sources\": [\n        {\n          \"src\": \"/uploads/banners/1/1791897898001-low.mp4\",\n          \"size\": 215394,\n          \"width\": 640,\n          \"height\": 360,\n          \"quality\": \"low\"\n        },\n        {\n          \"src\": \"/uploads/banners/1/1791897898001-medium.mp4\",\n          \"size\": 573498,\n          \"width\": 960,\n          \"height\": 540,\n          \"quality\": \"medium\"\n        },\n        {\n          \"src\": \"/uploads/banners/1/1791897898001-high.mp4\",\n          \"size\": 1207192,\n          \"width\": 1280,\n          \"height\": 720,\n          \"quality\": \"high\"\n        }\n      ]\n    }\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Filters (masters)",
+      "description": "Lists that build the website menus, tabs and filter checkboxes. Each returns the active rows only, as `[{ id, name, slug }]`, ordered by sort order then name. Not paged.",
+      "item": [
+        {
+          "name": "Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/frontend/categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "frontend",
+                "categories"
+              ]
+            },
+            "description": "Category tabs on the Products page (`?category=` takes one of these slugs)."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/frontend/categories",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "frontend",
+                    "categories"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Categories fetched\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"name\": \"Water Soluble Fertilizers\",\n      \"slug\": \"water-soluble-fertilizers\"\n    },\n    {\n      \"id\": 2,\n      \"name\": \"Customized Fertilizers\",\n      \"slug\": \"customized-fertilizers\"\n    },\n    {\n      \"id\": 3,\n      \"name\": \"Performance Organics\",\n      \"slug\": \"performance-organics\"\n    },\n    {\n      \"id\": 4,\n      \"name\": \"Microbials\",\n      \"slug\": \"microbials\"\n    },\n    {\n      \"id\": 6,\n      \"name\": \"Seed & Seedling Solutions\",\n      \"slug\": \"seed-and-seedling-solutions\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Brands",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/frontend/brands",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "frontend",
+                "brands"
+              ]
+            },
+            "description": "Brand checkboxes in the Products page filter (`?brands=`)."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/frontend/brands",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "frontend",
+                    "brands"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Brands fetched\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"name\": \"Trail Blaze\",\n      \"slug\": \"trail-blaze\"\n    },\n    {\n      \"id\": 2,\n      \"name\": \"Actin\",\n      \"slug\": \"actin\"\n    },\n    {\n      \"id\": 3,\n      \"name\": \"Imphact (PhoCyte)\",\n      \"slug\": \"imphact-phocyte\"\n    },\n    {\n      \"id\": 4,\n      \"name\": \"Tracssure\",\n      \"slug\": \"tracssure\"\n    },\n    {\n      \"id\": 5,\n      \"name\": \"Tracssure plus\",\n      \"slug\": \"tracssure-plus\"\n    },\n    {\n      \"id\": 6,\n      \"name\": \"Akre Shield\",\n      \"slug\": \"akre-shield\"\n    },\n    {\n      \"id\": 7,\n      \"name\": \"Akre PolyFruit\",\n      \"slug\": \"akre-polyfruit\"\n    },\n    {\n      \"id\": 8,\n      \"name\": \"Dormulin\",\n      \"slug\": \"dormulin\"\n    },\n    {\n      \"id\": 9,\n      \"name\": \"Intensiv\",\n      \"slug\": \"intensiv\"\n    },\n    {\n      \"id\": 10,\n      \"name\": \"Zetol\",\n      \"slug\": \"zetol\"\n    },\n    {\n      \"id\": 11,\n      \"name\": \"Ecolaid\",\n      \"slug\": \"ecolaid\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Applications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/frontend/applications",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "frontend",
+                "applications"
+              ]
+            },
+            "description": "Application checkboxes in the Products page filter (`?applications=`). The same rows are the crop schedule methods (Drip, Non Drip, Organic)."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/frontend/applications",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "frontend",
+                    "applications"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Applications fetched\",\n  \"data\": [\n    {\n      \"id\": 5,\n      \"name\": \"Drip\",\n      \"slug\": \"drip\"\n    },\n    {\n      \"id\": 2,\n      \"name\": \"Non Drip\",\n      \"slug\": \"non-drip\"\n    },\n    {\n      \"id\": 3,\n      \"name\": \"Organic\",\n      \"slug\": \"organic\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Crops",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/frontend/crops",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "frontend",
+                "crops"
+              ]
+            },
+            "description": "Crop checkboxes in the Products page filter (`?crops=`) and in the Crops page sidebar (`crop-details?crops=`)."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/frontend/crops",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "frontend",
+                    "crops"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Crops fetched\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"name\": \"Rice\",\n      \"slug\": \"rice\"\n    },\n    {\n      \"id\": 2,\n      \"name\": \"Maize\",\n      \"slug\": \"maize\"\n    },\n    {\n      \"id\": 3,\n      \"name\": \"Cotton\",\n      \"slug\": \"cotton\"\n    },\n    {\n      \"id\": 4,\n      \"name\": \"Chilli\",\n      \"slug\": \"chilli\"\n    },\n    {\n      \"id\": 5,\n      \"name\": \"Wheat\",\n      \"slug\": \"wheat\"\n    },\n    {\n      \"id\": 6,\n      \"name\": \"Potato\",\n      \"slug\": \"potato\"\n    },\n    {\n      \"id\": 8,\n      \"name\": \"Grapes\",\n      \"slug\": \"grapes\"\n    },\n    {\n      \"id\": 9,\n      \"name\": \"Pomegranate\",\n      \"slug\": \"pomegranate\"\n    },\n    {\n      \"id\": 10,\n      \"name\": \"Hybrid Paddy\",\n      \"slug\": \"hybrid-paddy\"\n    },\n    {\n      \"id\": 11,\n      \"name\": \"Green Chilli\",\n      \"slug\": \"green-chilli\"\n    },\n    {\n      \"id\": 12,\n      \"name\": \"Tomato\",\n      \"slug\": \"tomato\"\n    },\n    {\n      \"id\": 13,\n      \"name\": \"Banana\",\n      \"slug\": \"banana\"\n    },\n    {\n      \"id\": 14,\n      \"name\": \"Vegetables\",\n      \"slug\": \"vegetables\"\n    },\n    {\n      \"id\": 15,\n      \"name\": \"Sugarcane\",\n      \"slug\": \"sugarcane\"\n    },\n    {\n      \"id\": 16,\n      \"name\": \"Pulses\",\n      \"slug\": \"pulses\"\n    },\n    {\n      \"id\": 17,\n      \"name\": \"Horticulture\",\n      \"slug\": \"horticulture\"\n    },\n    {\n      \"id\": 18,\n      \"name\": \"Groundnut\",\n      \"slug\": \"groundnut\"\n    },\n    {\n      \"id\": 19,\n      \"name\": \"Apple\",\n      \"slug\": \"apple\"\n    },\n    {\n      \"id\": 20,\n      \"name\": \"Tobacco\",\n      \"slug\": \"tobacco\"\n    },\n    {\n      \"id\": 21,\n      \"name\": \"Turmeric\",\n      \"slug\": \"turmeric\"\n    },\n    {\n      \"id\": 22,\n      \"name\": \"Paddy\",\n      \"slug\": \"paddy\"\n    },\n    {\n      \"id\": 23,\n      \"name\": \"Citrus\",\n      \"slug\": \"citrus\"\n    },\n    {\n      \"id\": 24,\n      \"name\": \"Cardamom\",\n      \"slug\": \"cardamom\"\n    },\n    {\n      \"id\": 25,\n      \"name\": \"Onion\",\n      \"slug\": \"onion\"\n    },\n    {\n      \"id\": 26,\n      \"name\": \"Melons\",\n      \"slug\": \"melons\"\n    },\n    {\n      \"id\": 27,\n      \"name\": \"Cumin\",\n      \"slug\": \"cumin\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Crop Types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/frontend/crop-types",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "frontend",
+                "crop-types"
+              ]
+            },
+            "description": "Tabs on the Crops page (`crop-details?type=` takes one of these slugs)."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/frontend/crop-types",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "frontend",
+                    "crop-types"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Crop Types fetched\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"name\": \"Field Crops\",\n      \"slug\": \"field-crops\"\n    },\n    {\n      \"id\": 2,\n      \"name\": \"Horticultural Crops\",\n      \"slug\": \"horticultural-crops\"\n    },\n    {\n      \"id\": 3,\n      \"name\": \"Plantation Crops\",\n      \"slug\": \"plantation-crops\"\n    },\n    {\n      \"id\": 4,\n      \"name\": \"Vegetable Crops\",\n      \"slug\": \"vegetable-crops\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "States",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/frontend/states",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "frontend",
+                "states"
+              ]
+            },
+            "description": "Indian states and union territories, for state dropdowns (for example dealer or enquiry forms)."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/frontend/states",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "frontend",
+                    "states"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"States fetched\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"name\": \"Andaman and Nicobar Islands\",\n      \"slug\": \"andaman-and-nicobar-islands\"\n    },\n    {\n      \"id\": 2,\n      \"name\": \"Andhra Pradesh\",\n      \"slug\": \"andhra-pradesh\"\n    },\n    {\n      \"id\": 3,\n      \"name\": \"Arunachal Pradesh\",\n      \"slug\": \"arunachal-pradesh\"\n    },\n    {\n      \"id\": 4,\n      \"name\": \"Assam\",\n      \"slug\": \"assam\"\n    },\n    {\n      \"id\": 5,\n      \"name\": \"Bihar\",\n      \"slug\": \"bihar\"\n    },\n    {\n      \"id\": 6,\n      \"name\": \"Chandigarh\",\n      \"slug\": \"chandigarh\"\n    },\n    {\n      \"id\": 7,\n      \"name\": \"Chhattisgarh\",\n      \"slug\": \"chhattisgarh\"\n    },\n    {\n      \"id\": 8,\n      \"name\": \"Dadra and Nagar Haveli and Daman and Diu\",\n      \"slug\": \"dadra-and-nagar-haveli-and-daman-and-diu\"\n    },\n    {\n      \"id\": 9,\n      \"name\": \"Delhi\",\n      \"slug\": \"delhi\"\n    },\n    {\n      \"id\": 10,\n      \"name\": \"Goa\",\n      \"slug\": \"goa\"\n    },\n    {\n      \"id\": 11,\n      \"name\": \"Gujarat\",\n      \"slug\": \"gujarat\"\n    },\n    {\n      \"id\": 12,\n      \"name\": \"Haryana\",\n      \"slug\": \"haryana\"\n    },\n    {\n      \"id\": 13,\n      \"name\": \"Himachal Pradesh\",\n      \"slug\": \"himachal-pradesh\"\n    },\n    {\n      \"id\": 14,\n      \"name\": \"Jammu and Kashmir\",\n      \"slug\": \"jammu-and-kashmir\"\n    },\n    {\n      \"id\": 15,\n      \"name\": \"Jharkhand\",\n      \"slug\": \"jharkhand\"\n    },\n    {\n      \"id\": 16,\n      \"name\": \"Karnataka\",\n      \"slug\": \"karnataka\"\n    },\n    {\n      \"id\": 17,\n      \"name\": \"Kerala\",\n      \"slug\": \"kerala\"\n    },\n    {\n      \"id\": 18,\n      \"name\": \"Ladakh\",\n      \"slug\": \"ladakh\"\n    },\n    {\n      \"id\": 19,\n      \"name\": \"Lakshadweep\",\n      \"slug\": \"lakshadweep\"\n    },\n    {\n      \"id\": 20,\n      \"name\": \"Madhya Pradesh\",\n      \"slug\": \"madhya-pradesh\"\n    },\n    {\n      \"id\": 21,\n      \"name\": \"Maharashtra\",\n      \"slug\": \"maharashtra\"\n    },\n    {\n      \"id\": 22,\n      \"name\": \"Manipur\",\n      \"slug\": \"manipur\"\n    },\n    {\n      \"id\": 23,\n      \"name\": \"Meghalaya\",\n      \"slug\": \"meghalaya\"\n    },\n    {\n      \"id\": 24,\n      \"name\": \"Mizoram\",\n      \"slug\": \"mizoram\"\n    },\n    {\n      \"id\": 25,\n      \"name\": \"Nagaland\",\n      \"slug\": \"nagaland\"\n    },\n    {\n      \"id\": 26,\n      \"name\": \"Odisha\",\n      \"slug\": \"odisha\"\n    },\n    {\n      \"id\": 27,\n      \"name\": \"Puducherry\",\n      \"slug\": \"puducherry\"\n    },\n    {\n      \"id\": 28,\n      \"name\": \"Punjab\",\n      \"slug\": \"punjab\"\n    },\n    {\n      \"id\": 29,\n      \"name\": \"Rajasthan\",\n      \"slug\": \"rajasthan\"\n    },\n    {\n      \"id\": 30,\n      \"name\": \"Sikkim\",\n      \"slug\": \"sikkim\"\n    },\n    {\n      \"id\": 31,\n      \"name\": \"Tamil Nadu\",\n      \"slug\": \"tamil-nadu\"\n    },\n    {\n      \"id\": 32,\n      \"name\": \"Telangana\",\n      \"slug\": \"telangana\"\n    },\n    {\n      \"id\": 33,\n      \"name\": \"Tripura\",\n      \"slug\": \"tripura\"\n    },\n    {\n      \"id\": 34,\n      \"name\": \"Uttar Pradesh\",\n      \"slug\": \"uttar-pradesh\"\n    },\n    {\n      \"id\": 35,\n      \"name\": \"Uttarakhand\",\n      \"slug\": \"uttarakhand\"\n    },\n    {\n      \"id\": 36,\n      \"name\": \"West Bengal\",\n      \"slug\": \"west-bengal\"\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "Product list",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/frontend/products?category=water-soluble-fertilizers&page=1&limit=12",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "frontend",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "water-soluble-fertilizers",
+                  "description": "One category slug (from Categories). Empty or left out = all categories."
+                },
+                {
+                  "key": "brands",
+                  "value": "",
+                  "description": "Comma-separated brand slugs (from Brands), e.g. `dormulin,zetol`. Matches any of them.",
+                  "disabled": true
+                },
+                {
+                  "key": "applications",
+                  "value": "",
+                  "description": "Comma-separated application slugs (from Applications), e.g. `drip,organic`. Matches any of them.",
+                  "disabled": true
+                },
+                {
+                  "key": "crops",
+                  "value": "",
+                  "description": "Comma-separated crop slugs (from Crops), e.g. `paddy,cotton`. Matches any of them.",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number, from 1. Default 1."
+                },
+                {
+                  "key": "limit",
+                  "value": "12",
+                  "description": "Cards per page, 1 to 48. Default 12."
+                }
+              ]
+            },
+            "description": "The Products page grid: active products as cards, 12 per page.\n\nFilters take slugs. Values inside one filter match any of them; different filters must all match (for example `category=fungicides&crops=paddy,cotton` = fungicides used on paddy **or** cotton).\nUnknown slugs return an empty list, not an error. `limit` above 48 returns `400`.\n\n`data` = `{ rows, totalItems, totalPages, currentPage }`."
+          },
+          "response": [
+            {
+              "name": "200 One category, first 2 cards",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/frontend/products?category=water-soluble-fertilizers&page=1&limit=2",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "frontend",
+                    "products"
+                  ],
+                  "query": [
+                    {
+                      "key": "category",
+                      "value": "water-soluble-fertilizers"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "2"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Products fetched\",\n  \"data\": {\n    \"rows\": [\n      {\n        \"id\": 6,\n        \"name\": \"IMPHACT PHOCYTE\",\n        \"slug\": \"imphact-phocyte\",\n        \"tagline\": \"Making Every Nutrient Work\",\n        \"image\": \"/uploads/products/seed-imphact-phocyte.png\",\n        \"category\": {\n          \"name\": \"Water Soluble Fertilizers\",\n          \"slug\": \"water-soluble-fertilizers\"\n        },\n        \"brand\": {\n          \"name\": \"Imphact (PhoCyte)\",\n          \"slug\": \"imphact-phocyte\"\n        }\n      },\n      {\n        \"id\": 9,\n        \"name\": \"ZETOL SURE\",\n        \"slug\": \"zetol-sure\",\n        \"tagline\": \"Advanced Water Soluble Fertilizers for High Yielding Crops\",\n        \"image\": \"/uploads/products/seed-zetol-sure.png\",\n        \"category\": {\n          \"name\": \"Water Soluble Fertilizers\",\n          \"slug\": \"water-soluble-fertilizers\"\n        },\n        \"brand\": {\n          \"name\": \"Zetol\",\n          \"slug\": \"zetol\"\n        }\n      }\n    ],\n    \"totalItems\": 3,\n    \"totalPages\": 2,\n    \"currentPage\": 1\n  }\n}"
+            },
+            {
+              "name": "200 Brand + crop filters",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/frontend/products?category=&brands=dormulin&crops=paddy,cotton&page=1&limit=2",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "frontend",
+                    "products"
+                  ],
+                  "query": [
+                    {
+                      "key": "category",
+                      "value": ""
+                    },
+                    {
+                      "key": "brands",
+                      "value": "dormulin"
+                    },
+                    {
+                      "key": "crops",
+                      "value": "paddy,cotton"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "2"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Products fetched\",\n  \"data\": {\n    \"rows\": [\n      {\n        \"id\": 1,\n        \"name\": \"DORMULIN\",\n        \"slug\": \"dormulin-bag\",\n        \"tagline\": \"India's First Crop Hygiene Solution\",\n        \"image\": \"/uploads/products/seed-dormulin-bag.png\",\n        \"category\": {\n          \"name\": \"Crop Defense\",\n          \"slug\": \"crop-defense\"\n        },\n        \"brand\": {\n          \"name\": \"Dormulin\",\n          \"slug\": \"dormulin\"\n        }\n      }\n    ],\n    \"totalItems\": 1,\n    \"totalPages\": 1,\n    \"currentPage\": 1\n  }\n}"
+            },
+            {
+              "name": "400 limit too high",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/frontend/products?category=&page=1&limit=100",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "frontend",
+                    "products"
+                  ],
+                  "query": [
+                    {
+                      "key": "category",
+                      "value": ""
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Validation failed\",\n  \"error\": [\n    \"\\\"limit\\\" must be less than or equal to 48\"\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Product detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/frontend/products/:slug",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "frontend",
+                "products",
+                ":slug"
+              ],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": "dormulin-bag",
+                  "description": "Product slug, from a product card `slug`."
+                }
+              ]
+            },
+            "description": "The product page (`/products/:slug` on the website).\n\n- Hero: `headline` and `body`. `body` is cleaned HTML (paragraphs, bold, italic, underline, lists, links), so it can be rendered as HTML.\n- Sections: `benefits` (Key Benefits), `recommended_crops` (Recommended Crops), `application` (Application rows).\n- `image` and `pdf` are paths (`pdf` can be `null`); put `asset_url` in front.\n- `other_products`: 4 other product cards for the bottom of the page.\n- Empty detail fields already fall back to the tagline, description and filter crops, like the live site.\nInactive or unknown slugs return `404`."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/frontend/products/dormulin-bag",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "frontend",
+                    "products",
+                    "dormulin-bag"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Product fetched\",\n  \"data\": {\n    \"id\": 1,\n    \"name\": \"DORMULIN\",\n    \"slug\": \"dormulin-bag\",\n    \"tagline\": \"India's First Crop Hygiene Solution\",\n    \"description\": \"Crop hygiene solution designed to break passive dormancy caused by disease, nutrition, chemical and environmental stresses.\",\n    \"image\": \"/uploads/products/seed-dormulin-bag.png\",\n    \"pdf\": null,\n    \"category\": {\n      \"name\": \"Crop Defense\",\n      \"slug\": \"crop-defense\"\n    },\n    \"brand\": {\n      \"name\": \"Dormulin\",\n      \"slug\": \"dormulin\"\n    },\n    \"applications\": [\n      {\n        \"name\": \"Non Drip\",\n        \"slug\": \"non-drip\"\n      },\n      {\n        \"name\": \"Organic\",\n        \"slug\": \"organic\"\n      }\n    ],\n    \"crops\": [\n      {\n        \"name\": \"Rice\",\n        \"slug\": \"rice\"\n      },\n      {\n        \"name\": \"Cotton\",\n        \"slug\": \"cotton\"\n      },\n      {\n        \"name\": \"Chilli\",\n        \"slug\": \"chilli\"\n      }\n    ],\n    \"headline\": \"A 5th Generation Novel Nutrients\",\n    \"body\": \"<p>Repeated pesticide use increases pathogen resistance and the need for even more chemical applications, while infected crops still need nutrients to sustain normal physiological function leading to higher chemical residues and reduced produce quality.</p><p>Dormulin is a 5th generation Crop Hygiene Nutrition solution that helps maintain cleaner crop surfaces while supplying bio-available nutrients to support plant defence, metabolism, and recovery. Powered by Roxite Technology, it promotes healthier crops under continuous disease pressure while helping reduce repeated pesticide applications.</p>\",\n    \"benefits\": [\n      \"Supplies bio-available nutrients for improved plant performance\",\n      \"Helps suppress fungal and bacterial diseases\",\n      \"Enhances crop yield and produce quality\",\n      \"Reduces pesticide residue load\"\n    ],\n    \"recommended_crops\": [\n      {\n        \"name\": \"Grapes\",\n        \"slug\": \"grapes\"\n      },\n      {\n        \"name\": \"Pomegranate\",\n        \"slug\": \"pomegranate\"\n      },\n      {\n        \"name\": \"Potato\",\n        \"slug\": \"potato\"\n      },\n      {\n        \"name\": \"Hybrid Paddy\",\n        \"slug\": \"hybrid-paddy\"\n      },\n      {\n        \"name\": \"Green Chilli\",\n        \"slug\": \"green-chilli\"\n      },\n      {\n        \"name\": \"Tomato\",\n        \"slug\": \"tomato\"\n      },\n      {\n        \"name\": \"Banana\",\n        \"slug\": \"banana\"\n      }\n    ],\n    \"application\": [\n      {\n        \"stage\": \"Vegetative:\",\n        \"recommendation\": \"1 kg in 200 litres water, foliar spray, per acre\"\n      },\n      {\n        \"stage\": \"Flowering & Fruiting:\",\n        \"recommendation\": \"1 kg in 200 litres water, foliar spray, per acre\"\n      }\n    ],\n    \"other_products\": [\n      {\n        \"id\": 2,\n        \"name\": \"AKRE SHIELD\",\n        \"slug\": \"akre-shield\",\n        \"tagline\": \"Nitrogen Defence Technology\",\n        \"image\": \"/uploads/products/seed-akre-shield.png\"\n      },\n      {\n        \"id\": 3,\n        \"name\": \"INTENSIV\",\n        \"slug\": \"intensiv\",\n        \"tagline\": \"Customized Nutrition for Every Crop. Every Stage. Every Field.\",\n        \"image\": \"/uploads/products/seed-intensiv.png\"\n      },\n      {\n        \"id\": 4,\n        \"name\": \"ECOLAID MICROCYTE SOIL\",\n        \"slug\": \"ecolaid-microcyte-soil\",\n        \"tagline\": \"Advanced Root Defense Technology\",\n        \"image\": \"/uploads/products/seed-ecolaid-microcyte-soil.png\"\n      },\n      {\n        \"id\": 5,\n        \"name\": \"TRAIL BLAZE\",\n        \"slug\": \"trail-blaze\",\n        \"tagline\": \"Complete Nutrition That Activates Every Seed\",\n        \"image\": \"/uploads/products/seed-trail-blaze.png\"\n      }\n    ]\n  }\n}"
+            },
+            {
+              "name": "404 Unknown slug",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/frontend/products/not-a-product",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "frontend",
+                    "products",
+                    "not-a-product"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Product not found\",\n  \"error\": null\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Crops",
+      "item": [
+        {
+          "name": "Crop gallery",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/frontend/crop-details?type=plantation-crops&page=1&limit=9",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "frontend",
+                "crop-details"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "plantation-crops",
+                  "description": "One crop type slug (from Crop Types) = one tab. Empty or left out = every crop that has at least one active type."
+                },
+                {
+                  "key": "crops",
+                  "value": "",
+                  "description": "Comma-separated crop slugs (from Crops) for the sidebar checkboxes, e.g. `paddy,cotton`.",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number, from 1. Default 1."
+                },
+                {
+                  "key": "limit",
+                  "value": "9",
+                  "description": "Cards per page, 1 to 48. Default 9."
+                }
+              ]
+            },
+            "description": "The Crops page grid (`/crops` on the website): active crops as cards, 9 per page, in Crop master order.\n\nA crop only shows here when it has at least one active crop type; crops without a type still have a detail page.\n\n`data` = `{ rows, totalItems, totalPages, currentPage }`. Each card has `types` for tags."
+          },
+          "response": [
+            {
+              "name": "200 One tab (Plantation Crops)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/frontend/crop-details?type=plantation-crops&page=1&limit=9",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "frontend",
+                    "crop-details"
+                  ],
+                  "query": [
+                    {
+                      "key": "type",
+                      "value": "plantation-crops"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "9"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Crop details fetched\",\n  \"data\": {\n    \"rows\": [\n      {\n        \"name\": \"Banana\",\n        \"slug\": \"banana\",\n        \"image\": \"/uploads/crops/seed-banana.jpg\",\n        \"description\": \"Introducing a unique crop management program to maximize crop yields and quality, reduce crop losses and maximize crop returns.\",\n        \"types\": [\n          {\n            \"name\": \"Horticultural Crops\",\n            \"slug\": \"horticultural-crops\"\n          },\n          {\n            \"name\": \"Plantation Crops\",\n            \"slug\": \"plantation-crops\"\n          }\n        ]\n      },\n      {\n        \"name\": \"Tobacco\",\n        \"slug\": \"tobacco\",\n        \"image\": \"/uploads/crops/seed-tobacco.jpg\",\n        \"description\": \"Introducing a unique crop management program to maximize crop yields and quality, reduce crop losses and maximize crop returns.\",\n        \"types\": [\n          {\n            \"name\": \"Field Crops\",\n            \"slug\": \"field-crops\"\n          },\n          {\n            \"name\": \"Plantation Crops\",\n            \"slug\": \"plantation-crops\"\n          }\n        ]\n      },\n      {\n        \"name\": \"Cardamom\",\n        \"slug\": \"cardamom\",\n        \"image\": \"/uploads/crops/seed-cardamom.png\",\n        \"description\": \"Introducing a unique crop management program to maximize crop yields and quality, reduce crop losses and maximize crop returns.\",\n        \"types\": [\n          {\n            \"name\": \"Plantation Crops\",\n            \"slug\": \"plantation-crops\"\n          }\n        ]\n      }\n    ],\n    \"totalItems\": 3,\n    \"totalPages\": 1,\n    \"currentPage\": 1\n  }\n}"
+            },
+            {
+              "name": "200 All tabs, sidebar crops",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/frontend/crop-details?type=&crops=paddy,cotton,maize&page=1&limit=9",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "frontend",
+                    "crop-details"
+                  ],
+                  "query": [
+                    {
+                      "key": "type",
+                      "value": ""
+                    },
+                    {
+                      "key": "crops",
+                      "value": "paddy,cotton,maize"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "9"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Crop details fetched\",\n  \"data\": {\n    \"rows\": [\n      {\n        \"name\": \"Maize\",\n        \"slug\": \"maize\",\n        \"image\": \"/uploads/crops/seed-maize.jpg\",\n        \"description\": \"Introducing a unique crop management program to maximize crop yields and quality, reduce crop losses and maximize crop returns.\",\n        \"types\": [\n          {\n            \"name\": \"Field Crops\",\n            \"slug\": \"field-crops\"\n          }\n        ]\n      },\n      {\n        \"name\": \"Cotton\",\n        \"slug\": \"cotton\",\n        \"image\": \"/uploads/crops/seed-cotton.jpg\",\n        \"description\": \"Introducing a unique crop management program to maximize crop yields and quality, reduce crop losses and maximize crop returns.\",\n        \"types\": [\n          {\n            \"name\": \"Field Crops\",\n            \"slug\": \"field-crops\"\n          }\n        ]\n      },\n      {\n        \"name\": \"Paddy\",\n        \"slug\": \"paddy\",\n        \"image\": \"/uploads/crops/seed-paddy.jpg\",\n        \"description\": \"Introducing a unique crop management program to maximize crop yields and quality, reduce crop losses and maximize crop returns.\",\n        \"types\": [\n          {\n            \"name\": \"Field Crops\",\n            \"slug\": \"field-crops\"\n          }\n        ]\n      }\n    ],\n    \"totalItems\": 3,\n    \"totalPages\": 1,\n    \"currentPage\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Crop detail (schedule page)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/frontend/crop-details/:slug",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "frontend",
+                "crop-details",
+                ":slug"
+              ],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": "maize",
+                  "description": "Crop slug, from a gallery card `slug`."
+                }
+              ]
+            },
+            "description": "The crop schedule page (`/crops/:slug` on the website).\n\n- `stages`: the 6 fixed stages (key, name) for the stage tabs, always in this order.\n- `schedules`: one per active method (Drip, Non Drip, Organic...), in Application master order. An empty array means no schedule yet.\n- Each schedule lists all 6 stages. A stage with `rows: []` should show \"Schedule for this stage will be updated soon.\"\n- Each row: `time`, `product { name, slug }`, `applications`, `dose`, `quantity`. `product.name` is the label set in the admin, or the product name. `product.slug` is `null` when the product is inactive, so show the name without a link. `dose` can be `null` or empty.\n\nInactive or unknown crops return `404`."
+          },
+          "response": [
+            {
+              "name": "200 With a schedule",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/frontend/crop-details/maize",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "frontend",
+                    "crop-details",
+                    "maize"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Crop detail fetched\",\n  \"data\": {\n    \"name\": \"Maize\",\n    \"slug\": \"maize\",\n    \"image\": \"/uploads/crops/seed-maize.jpg\",\n    \"description\": \"Introducing a unique crop management program to maximize crop yields and quality, reduce crop losses and maximize crop returns.\",\n    \"types\": [\n      {\n        \"name\": \"Field Crops\",\n        \"slug\": \"field-crops\"\n      }\n    ],\n    \"stages\": [\n      {\n        \"key\": \"seed-treatment\",\n        \"name\": \"Seed Treatment\"\n      },\n      {\n        \"key\": \"root-and-soil-development\",\n        \"name\": \"Root and Soil Development\"\n      },\n      {\n        \"key\": \"vegetative-growth\",\n        \"name\": \"Vegetative Growth\"\n      },\n      {\n        \"key\": \"flowering-and-fruit-set\",\n        \"name\": \"Flowering and Fruit Set\"\n      },\n      {\n        \"key\": \"crop-development\",\n        \"name\": \"Crop Development\"\n      },\n      {\n        \"key\": \"post-harvest\",\n        \"name\": \"Post Harvest\"\n      }\n    ],\n    \"schedules\": [\n      {\n        \"method\": {\n          \"name\": \"Drip\",\n          \"slug\": \"drip\"\n        },\n        \"stages\": [\n          {\n            \"key\": \"seed-treatment\",\n            \"name\": \"Seed Treatment\",\n            \"rows\": [\n              {\n                \"time\": \"Seed Treatment\",\n                \"product\": {\n                  \"name\": \"TRAIL BLAZE\",\n                  \"slug\": \"trail-blaze\"\n                },\n                \"applications\": \"01\",\n                \"dose\": null,\n                \"quantity\": \"2.5ml/Kg of Seed\"\n              },\n              {\n                \"time\": \"7th Day\",\n                \"product\": {\n                  \"name\": \"Actin Drip\",\n                  \"slug\": \"actin\"\n                },\n                \"applications\": \"01\",\n                \"dose\": null,\n                \"quantity\": \"100g\"\n              }\n            ]\n          },\n          {\n            \"key\": \"root-and-soil-development\",\n            \"name\": \"Root and Soil Development\",\n            \"rows\": []\n          },\n          {\n            \"key\": \"vegetative-growth\",\n            \"name\": \"Vegetative Growth\",\n            \"rows\": [\n              {\n                \"time\": \"21 - 50 DAS\",\n                \"product\": {\n                  \"name\": \"Zetol Sure Rooting (11-44-11)\",\n                  \"slug\": \"zetol-sure\"\n                },\n                \"applications\": \"01\",\n                \"dose\": null,\n                \"quantity\": \"12 kg\"\n              }\n            ]\n          },\n          {\n            \"key\": \"flowering-and-fruit-set\",\n            \"name\": \"Flowering and Fruit Set\",\n            \"rows\": []\n          },\n          {\n            \"key\": \"crop-development\",\n            \"name\": \"Crop Development\",\n            \"rows\": []\n          },\n          {\n            \"key\": \"post-harvest\",\n            \"name\": \"Post Harvest\",\n            \"rows\": []\n          }\n        ]\n      },\n      {\n        \"method\": {\n          \"name\": \"Organic\",\n          \"slug\": \"organic\"\n        },\n        \"stages\": [\n          {\n            \"key\": \"seed-treatment\",\n            \"name\": \"Seed Treatment\",\n            \"rows\": []\n          },\n          {\n            \"key\": \"root-and-soil-development\",\n            \"name\": \"Root and Soil Development\",\n            \"rows\": []\n          },\n          {\n            \"key\": \"vegetative-growth\",\n            \"name\": \"Vegetative Growth\",\n            \"rows\": []\n          },\n          {\n            \"key\": \"flowering-and-fruit-set\",\n            \"name\": \"Flowering and Fruit Set\",\n            \"rows\": []\n          },\n          {\n            \"key\": \"crop-development\",\n            \"name\": \"Crop Development\",\n            \"rows\": []\n          },\n          {\n            \"key\": \"post-harvest\",\n            \"name\": \"Post Harvest\",\n            \"rows\": []\n          }\n        ]\n      }\n    ]\n  }\n}"
+            },
+            {
+              "name": "200 No schedule yet",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/frontend/crop-details/groundnut",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "frontend",
+                    "crop-details",
+                    "groundnut"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Crop detail fetched\",\n  \"data\": {\n    \"name\": \"Groundnut\",\n    \"slug\": \"groundnut\",\n    \"image\": \"/uploads/crops/seed-groundnut.jpg\",\n    \"description\": \"Introducing a unique crop management program to maximize crop yields and quality, reduce crop losses and maximize crop returns.\",\n    \"types\": [\n      {\n        \"name\": \"Field Crops\",\n        \"slug\": \"field-crops\"\n      }\n    ],\n    \"stages\": [\n      {\n        \"key\": \"seed-treatment\",\n        \"name\": \"Seed Treatment\"\n      },\n      {\n        \"key\": \"root-and-soil-development\",\n        \"name\": \"Root and Soil Development\"\n      },\n      {\n        \"key\": \"vegetative-growth\",\n        \"name\": \"Vegetative Growth\"\n      },\n      {\n        \"key\": \"flowering-and-fruit-set\",\n        \"name\": \"Flowering and Fruit Set\"\n      },\n      {\n        \"key\": \"crop-development\",\n        \"name\": \"Crop Development\"\n      },\n      {\n        \"key\": \"post-harvest\",\n        \"name\": \"Post Harvest\"\n      }\n    ],\n    \"schedules\": []\n  }\n}"
+            },
+            {
+              "name": "404 Unknown crop",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/frontend/crop-details/not-a-crop",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "frontend",
+                    "crop-details",
+                    "not-a-crop"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Crop not found\",\n  \"error\": null\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/frontend/health",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "frontend",
+            "health"
+          ]
+        },
+        "description": "Quick check that the website API is up."
+      },
+      "response": [
+        {
+          "name": "200 OK",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/frontend/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "frontend",
+                "health"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "body": "{\n  \"success\": true,\n  \"message\": \"Frontend API is running\",\n  \"scope\": \"frontend\"\n}"
+        }
+      ]
+    }
+  ]
+}

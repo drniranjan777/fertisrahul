@@ -10,7 +10,6 @@ import { fileURLToPath } from 'url';
 import apiRouter from './routes/index.js';
 import { config } from './config/index.js';
 import { logger } from './services/logger.service.js';
-import { MAX_FILE_MB } from './services/upload.service.js';
 import { errorResponse, HTTP_STATUS } from './utils/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -61,10 +60,7 @@ if (fs.existsSync(adminIndexHtml)) {
 app.use((req, res) => errorResponse(res, `Route ${req.originalUrl} not found`, null, HTTP_STATUS.NOT_FOUND));
 
 app.use((err, req, res, next) => {
-  if (err.name == 'MulterError') {
-    const message = err.code == 'LIMIT_FILE_SIZE' ? `Files must be ${MAX_FILE_MB} MB or smaller` : err.message;
-    return errorResponse(res, message, null, HTTP_STATUS.BAD_REQUEST);
-  }
+  if (err.name == 'MulterError') return errorResponse(res, err.message, null, HTTP_STATUS.BAD_REQUEST);
   // 23001 is Postgres's ON DELETE RESTRICT violation, which Sequelize reports as a plain DatabaseError.
   if (err.name == 'SequelizeForeignKeyConstraintError' || err.parent?.code == '23001') {
     return errorResponse(res, 'This record is in use and cannot be deleted', null, HTTP_STATUS.CONFLICT);

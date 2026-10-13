@@ -3,3 +3,6 @@ node_modules/
 logs/
 uploads/
 *.log
+admin2/
+*.zip
+.DS_Store

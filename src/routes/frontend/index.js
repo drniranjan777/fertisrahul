@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { MASTERS } from '../../config/masters.js';
 import { listActive } from '../../controllers/frontend/master.controller.js';
 import cropDetailRoutes from './cropDetail.route.js';
+import homeBannerRoutes from './homeBanner.route.js';
 import productRoutes from './product.route.js';
 
 const router = Router();
@@ -13,5 +14,6 @@ router.get('/health', (req, res) => {
 MASTERS.forEach((master) => router.get(`/${master.path}`, listActive(master)));
 router.use('/products', productRoutes);
 router.use('/crop-details', cropDetailRoutes);
+router.use('/home-banner', homeBannerRoutes);
 
 export default router;

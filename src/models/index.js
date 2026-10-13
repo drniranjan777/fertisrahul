@@ -1,11 +1,14 @@
 import { DataTypes } from 'sequelize';
 import { MASTERS } from '../config/masters.js';
 import AdminModel from './Admin.js';
+import BannerVideoModel from './BannerVideo.js';
+import BannerVideoStateModel from './BannerVideoState.js';
 import CropDetailModel from './CropDetail.js';
 import CropDetailTypeModel from './CropDetailType.js';
 import CropScheduleModel from './CropSchedule.js';
 import CropScheduleRowModel from './CropScheduleRow.js';
 import { defineMaster } from './defineMaster.js';
+import HomeBannerModel from './HomeBanner.js';
 import ProductModel from './Product.js';
 import { defineProductLink } from './ProductLink.js';
 
@@ -39,6 +42,10 @@ export const initModels = (sequelize) => {
   models.CropDetailType = CropDetailTypeModel(sequelize);
   models.CropSchedule = CropScheduleModel(sequelize);
   models.CropScheduleRow = CropScheduleRowModel(sequelize);
+
+  models.HomeBanner = HomeBannerModel(sequelize);
+  models.BannerVideo = BannerVideoModel(sequelize);
+  models.BannerVideoState = BannerVideoStateModel(sequelize);
 
   Object.values(models).forEach((model) => {
     if (typeof model.associate == 'function') model.associate(models);

@@ -23,5 +23,6 @@ export const getCounts = async () => {
   return {
     ...Object.fromEntries(sections.map(([key], index) => [key, counts[index]])),
     'crop-details': await countCropDetails(),
+    'banner-videos': await countByStatus('BannerVideo'),
   };
 };

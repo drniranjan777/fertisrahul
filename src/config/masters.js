@@ -51,4 +51,12 @@ export const MASTERS = [
     plural: 'Crop Types',
     usedBy: [byCropDetail('CropDetailType', 'crop_type_id')],
   },
+  {
+    path: 'states',
+    model: 'State',
+    table: 'states',
+    singular: 'State',
+    plural: 'States',
+    usedBy: [{ model: 'BannerVideoState', field: 'state_id', owner: 'banner_video_id', noun: 'banner video' }],
+  },
 ];

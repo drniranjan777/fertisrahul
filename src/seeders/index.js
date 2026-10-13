@@ -11,6 +11,7 @@ import { logger } from '../services/logger.service.js';
 import { toUploadPath } from '../services/upload.service.js';
 import { makeSlug } from '../utils/index.js';
 import { paragraphsToHtml } from '../utils/richText.util.js';
+import { DEFAULT_VIDEO_SEED, HOME_BANNER_SEED } from './data/banner.js';
 import { CROP_DESCRIPTION, CROP_DETAIL_SEEDS } from './data/crops.js';
 import { MASTER_SEEDS } from './data/masters.js';
 import { PRODUCT_SEEDS } from './data/products.js';
@@ -63,8 +64,8 @@ const masterIds = async (modelName, names) => {
   return ids;
 };
 
-// Seed photos live in data/<folder> and are copied to uploads/<folder>.
-const copySeedImage = async (file, folder = 'products') => {
+// Seed photos and videos live in data/<folder> and are copied to uploads/<folder>.
+const copySeedFile = async (file, folder = 'products') => {
   const dir = path.join(config.uploads.dir, folder);
   await fs.promises.mkdir(dir, { recursive: true });
   await fs.promises.copyFile(path.join(SEED_DATA, folder, file), path.join(dir, `seed-${file}`));
@@ -83,7 +84,7 @@ export const seedProducts = async () => {
         body: paragraphsToHtml(body),
         category_id: await masterId('Category', category),
         brand_id: await masterId('Brand', brand),
-        image: await copySeedImage(image),
+        image: await copySeedFile(image),
         sort_order: (index + 1) * 10,
       },
       {
@@ -105,7 +106,7 @@ export const seedCropDetails = async () => {
     await cropDetailRepo.create(
       {
         crop_id: await masterId('Crop', crop),
-        image: await copySeedImage(image, 'crops'),
+        image: await copySeedFile(image, 'crops'),
         description: CROP_DESCRIPTION,
       },
       { type_ids: await masterIds('CropType', types), schedules: [] }
@@ -114,9 +115,32 @@ export const seedCropDetails = async () => {
   logger.info(`Seeded ${CROP_DETAIL_SEEDS.length} crop details`);
 };
 
+export const seedHomeBanner = async () => {
+  if (await models.HomeBanner.count()) return;
+  await models.HomeBanner.create(HOME_BANNER_SEED);
+  logger.info('Seeded the home banner');
+};
+
+// The live video becomes the default. The server converts it on start (see requeuePending).
+export const seedBannerVideos = async () => {
+  if (await models.BannerVideo.count()) return;
+  const { name, video, poster } = DEFAULT_VIDEO_SEED;
+  await models.BannerVideo.create({
+    name,
+    is_default: true,
+    sort_order: 10,
+    status: 'processing',
+    pending_video: await copySeedFile(video, 'banners'),
+    pending_poster: await copySeedFile(poster, 'banners'),
+  });
+  logger.info('Seeded the default banner video');
+};
+
 export const runSeeders = async () => {
   await seedAdmin();
   await seedMasters();
   await seedProducts();
   await seedCropDetails();
+  await seedHomeBanner();
+  await seedBannerVideos();
 };
